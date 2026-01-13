@@ -1,0 +1,8 @@
+{
+    "language": "English",
+    "deck_name": "English Vocabulary Deck",
+    "file_out_name": "output_deck.apkg",
+    "deck_id": 2059400110,
+    "file_input": "week1.txt",
+    "voice": "en-US-ChristopherNeural"
+}

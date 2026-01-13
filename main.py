@@ -17,6 +17,13 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("Error: GOOGLE_API_KEY environment variable not set.")
 
+settings = None
+with open("settings.json", "r", encoding="utf-8") as f:
+    settings = json.load(f)
+if not settings:
+    raise ValueError("Error: settings.json not found or invalid.")
+
+
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 def get_stable_filename(word: str) -> str:
@@ -53,7 +60,7 @@ async def fetch_ipa(session, word: str) -> str:
 async def fetch_batch_ai_content(words: list[str]) -> dict[str, any]:
 
     prompt = f"""
-    Act as a English Dictionary API. I will give you a list of words.
+    Act as a {settings["language"]} Dictionary API. I will give you a list of words.
     Words: {json.dumps(words)}
     
     Return a JSON Object where keys are the words (in lowercase).
@@ -95,8 +102,7 @@ async def fetch_batch_ai_content(words: list[str]) -> dict[str, any]:
         return {}
 
 async def generate_audio(word: str, output_filename: str) -> str:
-    voice = "en-US-ChristopherNeural"
-    communicate = edge_tts.Communicate(word, voice)
+    communicate = edge_tts.Communicate(word, settings["voice"])
     await communicate.save(output_filename)
     return output_filename
 
@@ -133,7 +139,8 @@ def get_words_from_file(filepath: str) -> list:
 
 
 async def main():
-    words = get_words_from_file("words.txt")
+    
+    words = get_words_from_file(settings["file_input"])
     all_notes = []
     media_files = []
     
@@ -167,19 +174,20 @@ async def main():
         print("Done. No cards were created.")
         return
 
-    my_deck = genanki.Deck(2059400110, 'English Vocabulary Deck')
+    my_deck = genanki.Deck(settings["deck_id"], settings["deck_name"])
     for note in all_notes:
         my_deck.add_note(note)
 
     package = genanki.Package(my_deck)
     package.media_files = media_files
-    package.write_to_file('output_deck.apkg')
+    package.write_to_file(settings["file_out_name"])
 
     print(f"\n Finished {len(all_notes)} cards.")
-    print(f"File: output_deck.apkg")
+    print(f"File: {settings['file_out_name']}")
     
     for f in media_files:
-        os.remove(f)
+        if os.path.exists(f):
+            os.remove(f)
 
 if __name__ == "__main__":
     asyncio.run(main())
